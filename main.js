@@ -45,7 +45,7 @@ const getOrCreateUserByUniqueId = (uniqueId) => {
 };
 
 app.get('/api/getUserData', async (req, res) => {
-  let uniqueId = req.cookies.uniqueId;
+  let uniqueId = req.query.id;
   if (!uniqueId) {
     uniqueId = uuidv4();  
     res.cookie('uniqueId', uniqueId, { maxAge: 86400000});
@@ -56,6 +56,7 @@ app.get('/api/getUserData', async (req, res) => {
     res.json({
       score: user.score,
       prizes: user.prizes,
+      id : uniqueId
     });
   } catch (error) {
     console.error('Error fetching user data:', error);
