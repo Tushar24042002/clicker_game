@@ -1,8 +1,8 @@
-// server/server.js
+// server.js
 require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
-const requestIp = require('request-ip');
+const { v4: uuidv4 } = require('uuid'); 
 const { handleButtonClick } = require('./jobs/gameLogic');
 const db = require('./models/database');
 const app = express();
@@ -10,24 +10,22 @@ const port = process.env.PORT || 5000;
 const cors = require('cors');
 
 app.use(cors());
-app.use(requestIp.mw()); 
 app.use(express.json());
 
-const getOrCreateUserByIp = (ip) => {
+const getOrCreateUserByUniqueId = (uniqueId) => {
   return new Promise((resolve, reject) => {
-    db.query('SELECT * FROM users WHERE ip_address = ?', [ip], (err, results) => {
+    db.query('SELECT * FROM users WHERE unique_id = ?', [uniqueId], (err, results) => {
       if (err) return reject(err);
 
       if (results.length > 0) {
         resolve(results[0]);
       } else {
-        // Create new user
         db.query(
-          'INSERT INTO users (ip_address, score, prizes) VALUES (?, 0, 0)',
-          [ip],
+          'INSERT INTO users (unique_id, score, prizes) VALUES (?, 0, 0)',
+          [uniqueId],
           (err, results) => {
             if (err) return reject(err);
-            resolve({ id: results.insertId, ip_address: ip, score: 0, prizes: 0 });
+            resolve({ id: results.insertId, unique_id: uniqueId, score: 0, prizes: 0 });
           }
         );
       }
@@ -36,9 +34,14 @@ const getOrCreateUserByIp = (ip) => {
 };
 
 app.get('/api/getUserData', async (req, res) => {
-  const ip = req.clientIp; 
+  let uniqueId = req.cookies.uniqueId;
+  if (!uniqueId) {
+    uniqueId = uuidv4();  
+    res.cookie('uniqueId', uniqueId, { maxAge: 86400000 });  
+  }
+
   try {
-    const user = await getOrCreateUserByIp(ip); 
+    const user = await getOrCreateUserByUniqueId(uniqueId);
     res.json({
       score: user.score,
       prizes: user.prizes,
@@ -48,18 +51,24 @@ app.get('/api/getUserData', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 app.post('/api/clickButton', async (req, res) => {
-  const ip = req.clientIp; 
+  let uniqueId = req.cookies.uniqueId;
+  if (!uniqueId) {
+    uniqueId = uuidv4(); 
+    res.cookie('uniqueId', uniqueId, { maxAge: 86400000 }); 
+  }
 
   try {
-    const user = await getOrCreateUserByIp(ip); 
-    const result = await handleButtonClick(user.id); 
-    res.json(result); 
+    const user = await getOrCreateUserByUniqueId(uniqueId);
+    const result = await handleButtonClick(user.id);
+    res.json(result);
   } catch (error) {
     console.error('Error processing click:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
