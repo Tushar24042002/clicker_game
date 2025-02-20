@@ -7,10 +7,21 @@ const { handleButtonClick } = require('./jobs/gameLogic');
 const db = require('./models/database');
 const app = express();
 const port = process.env.PORT || 5000;
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL, 
+  methods: ['GET', 'POST'],
+  credentials: true, 
+};
+
+app.use(cors(corsOptions));
+
+// app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+
 
 const getOrCreateUserByUniqueId = (uniqueId) => {
   return new Promise((resolve, reject) => {
@@ -37,7 +48,7 @@ app.get('/api/getUserData', async (req, res) => {
   let uniqueId = req.cookies.uniqueId;
   if (!uniqueId) {
     uniqueId = uuidv4();  
-    res.cookie('uniqueId', uniqueId, { maxAge: 86400000 });  
+    res.cookie('uniqueId', uniqueId, { maxAge: 86400000});
   }
 
   try {
