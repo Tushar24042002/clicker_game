@@ -45,7 +45,7 @@ const getOrCreateUserByUniqueId = (uniqueId) => {
 };
 
 app.get('/api/getUserData', async (req, res) => {
-  let uniqueId = req.query.id;
+  let uniqueId = req.query.uniqueId;
   if (!uniqueId) {
     uniqueId = uuidv4();  
     res.cookie('uniqueId', uniqueId, { maxAge: 86400000});
@@ -65,7 +65,7 @@ app.get('/api/getUserData', async (req, res) => {
 });
 
 app.post('/api/clickButton', async (req, res) => {
-  let uniqueId = req.cookies.uniqueId;
+  let uniqueId = req.query.uniqueId;
   if (!uniqueId) {
     uniqueId = uuidv4(); 
     res.cookie('uniqueId', uniqueId, { maxAge: 86400000 }); 
